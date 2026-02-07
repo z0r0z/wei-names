@@ -498,6 +498,7 @@ body.modal-open { overflow: hidden; }
   <div class="timer" id="pendingTimer"></div>
   <div class="actions">
     <button id="revealBtn" onclick="doReveal()">Reveal</button>
+    <button id="revealUsdcBtn" onclick="doRevealWithUSDC()" style="background:#2775ca;color:#fff;border:1px solid #2775ca;">Pay with USDC</button>
     <button class="secondary" onclick="clearPending()">Cancel</button>
   </div>
   <div style="font-size:10px;opacity:0.5;margin-top:12px;line-height:1.4;">Your secret is stored locally. Don't clear site data or you won't be able to reveal.</div>
@@ -580,6 +581,10 @@ window.onerror = function(msg, url, line) {
 
 const CONTRACT = '0x0000000000696760E15f265e828DB644A0c242EB';
 const MULTICALL3 = '0xcA11bde05977b3631167028862bE2a173976CA11';
+const ZROUTER = '0x0000000000001C3a3Aa8FDfca4f5c0c94583aC46';
+const USDC_ADDR = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+const WETH_ADDR = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
+const ZQUOTER = '0x907DAE8d75369A21fFf57402Fe29Ef4e95523465';
 
 // Gateway for .wei websites - resolves name.wei.domains to IPFS contenthash
 // URL pattern: https://name.wei.domains (not name.wei.wei.domains)
@@ -1496,15 +1501,16 @@ async function doCommit() {
     showStatus('Creating commitment...', '');
 
     const secret = ethers.hexlify(ethers.randomBytes(32));
-    const owner = await signer.getAddress();
+    const userAddr = await signer.getAddress();
     const rc = readContract || contract;
-    const commitment = await rc.makeCommitment(name, owner, secret);
+    const commitment = await rc.makeCommitment(name, ZROUTER, secret);
 
     // Save pending BEFORE tx to persist even if user leaves during confirmation
     const pending = {
       name,
       secret,
-      owner,
+      owner: userAddr,
+      commitOwner: ZROUTER,
       commitment,
       timestamp: Math.floor(Date.now() / 1000),
       confirmed: false
@@ -1600,13 +1606,157 @@ async function doReveal() {
     const total = results[0][0] + results[1][0];
 
     showStatus('Registering ' + pending.name + '.wei...', '');
-    const tx = await wcTransaction(contract.reveal(pending.name, pending.secret, { value: total }), 'Approve registration');
+    let tx;
+    if (pending.commitOwner === ZROUTER) {
+      const rIface = new ethers.Interface([
+        'function revealName(string label, bytes32 secret, address to) returns (uint256)',
+        'function multicall(bytes[] data) payable returns (bytes[])'
+      ]);
+      const router = new ethers.Contract(ZROUTER, rIface, signer);
+      tx = await wcTransaction(router.multicall([
+        rIface.encodeFunctionData('revealName', [pending.name, pending.secret, connectedAddress])
+      ], { value: total }), 'Approve registration');
+    } else {
+      tx = await wcTransaction(contract.reveal(pending.name, pending.secret, { value: total }), 'Approve registration');
+    }
     const txHash = tx.hash;
     showStatus('Waiting for confirmation...', '', txHash);
     await waitForTx(tx);
 
     clearPending();
     showStatus(pending.name + '.wei registered!', 'success', txHash);
+    doCheckName();
+  } catch (e) {
+    handleError(e);
+  }
+}
+
+async function doRevealWithUSDC() {
+  const pending = loadPending();
+  if (!pending || !signer) return;
+
+  try {
+    if (!pending.commitOwner || pending.commitOwner !== ZROUTER) {
+      showStatus('This commitment was made before USDC support. Cancel and re-commit to use USDC.', 'error');
+      return;
+    }
+
+    if (pending.owner && connectedAddress &&
+        pending.owner.toLowerCase() !== connectedAddress.toLowerCase()) {
+      showStatus(`Connect the wallet used to commit: ${pending.owner.slice(0,6)}...${pending.owner.slice(-4)}`, 'error');
+      return;
+    }
+
+    if (pending.confirmed === false) {
+      showStatus('Commitment not yet confirmed. Please wait.', 'error');
+      return;
+    }
+
+    const elapsed = Math.floor(Date.now() / 1000) - pending.timestamp;
+    if (elapsed < MIN_COMMIT_AGE) {
+      showStatus('Wait ' + (MIN_COMMIT_AGE - elapsed) + ' more seconds', 'error');
+      return;
+    }
+    if (elapsed > MAX_COMMIT_AGE) {
+      showStatus('Commitment expired. Please commit again.', 'error');
+      clearPending();
+      return;
+    }
+
+    showStatus('Calculating fee...', '');
+
+    // 1. Get fee in ETH
+    const tokenId = localComputeId(pending.name);
+    const feeResults = await multicall([
+      { fn: 'getFee', args: [byteLength(pending.name)] },
+      { fn: 'getPremium', args: [tokenId] }
+    ]);
+    if (!feeResults[0] || !feeResults[1]) throw new Error('Failed to fetch fee data');
+    const totalEth = feeResults[0][0] + feeResults[1][0];
+
+    // 2. Get best USDC quote via zQuoter
+    showStatus('Getting USDC price...', '');
+    const rpc = await getRpc();
+    const deadline = Math.floor(Date.now() / 1000) + 3600;
+
+    const quoterAbi = [
+      'function buildBestSwap(address to, bool exactOut, address tokenIn, address tokenOut, uint256 swapAmount, uint256 slippageBps, uint256 deadline) view returns (tuple(uint8 source, uint256 feeBps, uint256 amountIn, uint256 amountOut) best, bytes callData, uint256 amountLimit, uint256 msgValue)'
+    ];
+    const quoter = new ethers.Contract(ZQUOTER, quoterAbi, rpc);
+    const quote = await quoter.buildBestSwap(
+      ZROUTER,              // to: router (ETH stays for revealName)
+      true,                 // exactOut: get exact ETH needed
+      USDC_ADDR,            // tokenIn
+      ethers.ZeroAddress,   // tokenOut (ETH)
+      totalEth,             // exact ETH needed
+      200n,                 // 2% slippage
+      deadline
+    );
+
+    const maxUSDC = quote.amountLimit; // max USDC including slippage
+    if (quote.best.amountIn === 0n) throw new Error('Could not get USDC quote');
+
+    // 3. Check USDC balance
+    const erc20Iface = new ethers.Interface([
+      'function balanceOf(address) view returns (uint256)',
+      'function nonces(address) view returns (uint256)'
+    ]);
+    const [balRes, nonceRes] = await Promise.all([
+      rpc.call({ to: USDC_ADDR, data: erc20Iface.encodeFunctionData('balanceOf', [connectedAddress]) }),
+      rpc.call({ to: USDC_ADDR, data: erc20Iface.encodeFunctionData('nonces', [connectedAddress]) })
+    ]);
+    const usdcBalance = erc20Iface.decodeFunctionResult('balanceOf', balRes)[0];
+    const nonce = erc20Iface.decodeFunctionResult('nonces', nonceRes)[0];
+
+    if (usdcBalance < maxUSDC) {
+      showStatus(`Insufficient USDC. Need ~${Number(ethers.formatUnits(maxUSDC, 6)).toFixed(2)}, have ${Number(ethers.formatUnits(usdcBalance, 6)).toFixed(2)}`, 'error');
+      return;
+    }
+
+    // 4. Sign EIP-2612 permit
+    const usdcDisplay = Number(ethers.formatUnits(quote.best.amountIn, 6)).toFixed(2);
+    showStatus(`Sign permit for ~${usdcDisplay} USDC...`, '');
+
+    const sig = await wcTransaction(
+      signer.signTypedData(
+        { name: 'USD Coin', version: '2', chainId: 1, verifyingContract: USDC_ADDR },
+        { Permit: [
+          { name: 'owner', type: 'address' },
+          { name: 'spender', type: 'address' },
+          { name: 'value', type: 'uint256' },
+          { name: 'nonce', type: 'uint256' },
+          { name: 'deadline', type: 'uint256' }
+        ]},
+        { owner: connectedAddress, spender: ZROUTER, value: maxUSDC, nonce, deadline }
+      ),
+      'Sign USDC permit in your wallet'
+    );
+
+    const { v, r, s } = ethers.Signature.from(sig);
+
+    // 5. Build multicall: permit + bestSwap (exactOut) + revealName
+    showStatus('Submitting transaction...', '');
+
+    const routerIface = new ethers.Interface([
+      'function permit(address token, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)',
+      'function revealName(string label, bytes32 secret, address to) returns (uint256)',
+      'function sweep(address token, uint256 id, uint256 amount, address to)',
+      'function multicall(bytes[] data) payable returns (bytes[])'
+    ]);
+
+    const permitCall = routerIface.encodeFunctionData('permit', [USDC_ADDR, maxUSDC, deadline, v, r, s]);
+    const revealCall = routerIface.encodeFunctionData('revealName', [pending.name, pending.secret, connectedAddress]);
+    const sweepCall = routerIface.encodeFunctionData('sweep', [ethers.ZeroAddress, 0, 0, connectedAddress]);
+    const calls = [permitCall, quote.callData, revealCall, sweepCall];
+
+    const router = new ethers.Contract(ZROUTER, routerIface, signer);
+    const tx = await wcTransaction(router.multicall(calls), 'Approve USDC registration');
+    const txHash = tx.hash;
+    showStatus('Waiting for confirmation...', '', txHash);
+    await waitForTx(tx);
+
+    clearPending();
+    showStatus(pending.name + '.wei registered with USDC! (~' + usdcDisplay + ' USDC)', 'success', txHash);
     doCheckName();
   } catch (e) {
     handleError(e);
@@ -1701,11 +1851,13 @@ async function updateTimer(timerId) {
   const remaining = MIN_COMMIT_AGE - elapsed;
   const timerEl = $('pendingTimer');
   const revealBtn = $('revealBtn');
+  const usdcBtn = $('revealUsdcBtn');
 
   if (pending.confirmed === false) {
     // Explicitly false means commit tx is still pending
     timerEl.textContent = 'Waiting for confirmation...';
     revealBtn.disabled = true;
+    if (usdcBtn) usdcBtn.disabled = true;
 
     // Track poll attempts
     if (!pending._pollAttempts) pending._pollAttempts = 0;
@@ -1753,15 +1905,18 @@ async function updateTimer(timerId) {
   } else if (remaining > 0) {
     timerEl.textContent = 'Ready in ' + remaining + 's';
     revealBtn.disabled = true;
+    if (usdcBtn) usdcBtn.disabled = true;
   } else if (elapsed < MAX_COMMIT_AGE) {
     const expires = MAX_COMMIT_AGE - elapsed;
     const hrs = Math.floor(expires / 3600);
     const mins = Math.floor((expires % 3600) / 60);
     timerEl.textContent = 'Ready to reveal. Expires in ' + hrs + 'h ' + mins + 'm';
     revealBtn.disabled = !signer;
+    if (usdcBtn) usdcBtn.disabled = !signer || !pending.commitOwner;
   } else {
     timerEl.textContent = 'Expired';
     revealBtn.disabled = true;
+    if (usdcBtn) usdcBtn.disabled = true;
   }
 
   if (elapsed < MAX_COMMIT_AGE) {
