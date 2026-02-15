@@ -8,6 +8,8 @@ A simple namespace on Ethereum named after the smallest unit of ether.
 
 **Contract:** `0x0000000000696760E15f265e828DB644A0c242EB` (Ethereum Mainnet)
 
+**Subdomain Registrar:** `0x0000000000DD72Ef1DF17f527E719AEE5ef71E64`
+
 **Gateway:** `wei.domains` - resolves `name.wei.domains` to IPFS content
 
 **Dapp:** `wei.domains` (hosted via IPFS)
