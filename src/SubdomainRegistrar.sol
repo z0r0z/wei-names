@@ -16,6 +16,17 @@ interface INameNFT is IERC721Like {
     function registerSubdomainFor(string calldata label, uint256 parentId, address to)
         external
         returns (uint256);
+    function isAvailable(string calldata label, uint256 parentId) external view returns (bool);
+    function records(uint256 tokenId)
+        external
+        view
+        returns (
+            string memory label,
+            uint256 parent,
+            uint64 expiresAt,
+            uint64 epoch,
+            uint64 parentEpoch
+        );
 }
 
 contract SubdomainRegistrar is IERC721Receiver {
@@ -23,6 +34,7 @@ contract SubdomainRegistrar is IERC721Receiver {
                                    ERRORS
     //////////////////////////////////////////////////////////////*/
     error GateFailed();
+    error NotAvailable();
     error NotEnabled();
     error Reentrancy();
     error NotEscrowed();
@@ -32,6 +44,7 @@ contract SubdomainRegistrar is IERC721Receiver {
     error ValueTooLarge();
     error AlreadyEscrowed();
     error InsufficientFee();
+    error StaleEscrow();
     error StaleController();
     error ETHTransferFailed();
     error TransferFromFailed();
@@ -83,6 +96,7 @@ contract SubdomainRegistrar is IERC721Receiver {
 
     mapping(uint256 => Config) public config;
     mapping(uint256 => address) public escrowedController; // nonzero => escrowed, controller recorded
+    mapping(uint256 => uint64) public escrowedEpoch; // epoch at deposit time
     mapping(address => uint256) public ethBalance; // pull-payment ledger
 
     uint256 constant _REENTRANCY_GUARD_SLOT = 0x929eee149b4bd21268;
@@ -172,6 +186,8 @@ contract SubdomainRegistrar is IERC721Receiver {
         if (name.ownerOf(parentId) != msg.sender) revert NotAuthorized();
 
         escrowedController[parentId] = msg.sender;
+        (,,, uint64 epoch,) = name.records(parentId);
+        escrowedEpoch[parentId] = epoch;
         name.transferFrom(msg.sender, address(this), parentId);
 
         emit Deposited(parentId, msg.sender);
@@ -182,6 +198,10 @@ contract SubdomainRegistrar is IERC721Receiver {
         if (controller == address(0)) revert NotEscrowed();
         if (controller != msg.sender) revert NotAuthorized();
 
+        // Reject stale escrow: epoch must match what was stored at deposit time
+        (,,, uint64 currentEpoch,) = name.records(parentId);
+        if (escrowedEpoch[parentId] != currentEpoch) revert StaleEscrow();
+
         if (to == address(0)) to = msg.sender;
 
         // Disable to avoid stale always-on config after custody changes.
@@ -189,6 +209,7 @@ contract SubdomainRegistrar is IERC721Receiver {
         c.enabled = false;
 
         delete escrowedController[parentId];
+        delete escrowedEpoch[parentId];
 
         name.transferFrom(address(this), to, parentId);
 
@@ -206,6 +227,8 @@ contract SubdomainRegistrar is IERC721Receiver {
         if (from == address(0) || from == address(this)) return this.onERC721Received.selector;
 
         escrowedController[tokenId] = from;
+        (,,, uint64 epoch,) = name.records(tokenId);
+        escrowedEpoch[tokenId] = epoch;
         emit Deposited(tokenId, from);
 
         return this.onERC721Received.selector;
@@ -232,6 +255,7 @@ contract SubdomainRegistrar is IERC721Receiver {
     {
         Config memory c = config[parentId];
         if (!c.enabled) revert NotEnabled();
+        if (!name.isAvailable(label, parentId)) revert NotAvailable();
 
         // prevent sales after controller changes (transfer or escrow controller mismatch)
         address esc = escrowedController[parentId];
@@ -322,6 +346,7 @@ contract SubdomainRegistrar is IERC721Receiver {
         }
 
         delete escrowedController[parentId];
+        delete escrowedEpoch[parentId];
         config[parentId].enabled = false;
 
         emit StaleEscrowCleared(parentId, esc);

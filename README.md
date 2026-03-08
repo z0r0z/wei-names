@@ -6,13 +6,13 @@
 
 A simple namespace on Ethereum named after the smallest unit of ether.
 
-**Contract:** `0x0000000000696760E15f265e828DB644A0c242EB` (Ethereum Mainnet)
+**Contract:** [`0x0000000000696760E15f265e828DB644A0c242EB`](https://etherscan.io/address/0x0000000000696760E15f265e828DB644A0c242EB) (Ethereum Mainnet)
 
-**Subdomain Registrar:** `0x0000000000DD72Ef1DF17f527E719AEE5ef71E64`
+**Subdomain Registrar:** [`0x53745292f0d30d68204a63002C17bDa16C772bf7`](https://etherscan.io/address/0x53745292f0d30d68204a63002C17bDa16C772bf7)
 
-**Gateway:** `wei.domains` - resolves `name.wei.domains` to IPFS content
+**Gateway:** [`wei.domains`](https://wei.domains) - resolves `name.wei.domains` to IPFS content
 
-**Dapp:** `wei.domains` (hosted via IPFS)
+**Dapp:** [`wei.domains`](https://wei.domains) (hosted via IPFS)
 
 ---
 
@@ -635,10 +635,29 @@ const results = await multicall.aggregate3([
 
 ---
 
+## Audits
+
+AI-assisted audits performed on the codebase:
+
+| Audit | Scope | Findings | Status |
+|---|---|---|---|
+| [Surya](audit/surya.md) | NameNFT, SubdomainRegistrar | 1 High, 1 Medium | All fixed |
+| [Cantina Apex](audit/cantina.md) | NameNFT, Dapp | 3 Medium | All patched |
+| [Zellic V12](audit/zellic/weinames_findings_2026-03-08-findings.md) | NameNFT, SubdomainRegistrar | 1 Medium, 1 Low | Both invalid |
+
+**Surya** found two valid SubdomainRegistrar issues: subdomain hijacking via missing `isAvailable` check (High), and stale escrow controller enabling NFT theft via epoch mismatch (Medium). Both were fixed in the redeployed SubdomainRegistrar.
+
+**Cantina Apex** found three valid dapp/integration issues: XSS via unescaped name in `innerHTML`, router commit-reveal frontrunning, and refund misdirection through router. All were patched in the dapp and zRouter. NameNFT contract was not affected. (SubdomainRegistrar not included.)
+
+**Zellic V12** reported two findings on SubdomainRegistrar, both self-invalidated: flash mode `transferFrom` does not trigger `onERC721Received` (incorrect premise), and `tx.origin` in constructor is intentional for CREATE2/CREATE3 deployment.
+
+---
+
 ## Links
 
 - **Dapp:** https://wei.domains
 - **Contract:** https://etherscan.io/address/0x0000000000696760E15f265e828DB644A0c242EB
+- **Subdomain Registrar:** https://etherscan.io/address/0x53745292f0d30d68204a63002C17bDa16C772bf7
 - **OpenSea:** https://opensea.io/collection/wei-name-service
 - **ENSIP-15:** https://docs.ens.domains/ensip/15/
 - **ens-normalize:** https://github.com/adraffy/ens-normalize.js

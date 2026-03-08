@@ -938,21 +938,56 @@ contract SubdomainRegistrarTest is Test {
 
     /// @notice Registering the same label twice: the second registration
     ///         overwrites the first (NameNFT allows parent owner to reclaim).
-    function testSubdomainOverwrite() public {
+    function testSubdomainOverwriteBlocked() public {
         _configureEscrowETH(0);
 
         vm.prank(buyer);
-        uint256 subId1 = registrar.register(parentId, "overwrite");
-        assertEq(nameNFT.ownerOf(subId1), buyer);
+        uint256 subId = registrar.register(parentId, "overwrite");
+        assertEq(nameNFT.ownerOf(subId), buyer);
 
-        // Register same label again to a different address
-        address other = makeAddr("other");
+        // Attempting to register the same label again must revert
+        address attacker = makeAddr("attacker");
+        vm.prank(attacker);
+        vm.expectRevert(SubdomainRegistrar.NotAvailable.selector);
+        registrar.register(parentId, "overwrite");
+
+        // Original owner still holds the subdomain
+        assertEq(nameNFT.ownerOf(subId), buyer, "buyer still owns subdomain");
+    }
+
+    /// @notice Subdomain hijacking blocked in both escrow and flash mode
+    function testSubdomainHijackBlockedEscrow() public {
+        _configureEscrowETH(0.01 ether);
+
+        // Buyer registers a subdomain
         vm.prank(buyer);
-        uint256 subId2 = registrar.registerFor(parentId, "overwrite", other);
+        uint256 subId = registrar.register{value: 0.01 ether}(parentId, "mail");
+        assertEq(nameNFT.ownerOf(subId), buyer);
 
-        // Same token ID (deterministic hash), new owner
-        assertEq(subId1, subId2, "same token ID");
-        assertEq(nameNFT.ownerOf(subId2), other, "overwritten to new owner");
+        // Attacker tries to overwrite it
+        address attacker = makeAddr("attacker");
+        vm.deal(attacker, 1 ether);
+        vm.prank(attacker);
+        vm.expectRevert(SubdomainRegistrar.NotAvailable.selector);
+        registrar.register{value: 0.01 ether}(parentId, "mail");
+
+        assertEq(nameNFT.ownerOf(subId), buyer, "buyer still owns subdomain");
+    }
+
+    function testSubdomainHijackBlockedFlash() public {
+        _configureFlashETH(0.01 ether);
+
+        vm.prank(buyer);
+        uint256 subId = registrar.register{value: 0.01 ether}(parentId, "mail");
+        assertEq(nameNFT.ownerOf(subId), buyer);
+
+        address attacker = makeAddr("attacker");
+        vm.deal(attacker, 1 ether);
+        vm.prank(attacker);
+        vm.expectRevert(SubdomainRegistrar.NotAvailable.selector);
+        registrar.register{value: 0.01 ether}(parentId, "mail");
+
+        assertEq(nameNFT.ownerOf(subId), buyer, "buyer still owns subdomain");
     }
 
     /// @notice registerFor with to=address(0) reverts (NameNFT _safeMint rejects).
@@ -1131,6 +1166,47 @@ contract SubdomainRegistrarTest is Test {
         vm.prank(controller);
         vm.expectRevert(SubdomainRegistrar.AlreadyEscrowed.selector);
         registrar.clearStaleEscrow(parentId);
+    }
+
+    /// @notice Stale escrow epoch check prevents NFT theft via transferFrom.
+    ///         Old controller cannot withdraw after name expires and is re-registered,
+    ///         even if new owner sends NFT via raw transferFrom (bypassing onERC721Received).
+    function testStaleEscrowEpochBlocksTheft() public {
+        _depositParent();
+
+        // Name expires past grace
+        vm.warp(block.timestamp + 456 days);
+
+        // New owner re-registers — epoch increments, old token burned
+        address newOwner = makeAddr("newOwner");
+        vm.deal(newOwner, 200 ether);
+        _registerName("subregtest", newOwner);
+
+        // New owner sends via transferFrom (bypasses onERC721Received)
+        vm.prank(newOwner);
+        nameNFT.transferFrom(newOwner, address(registrar), parentId);
+
+        // Stale escrowedController still points to old controller
+        assertEq(registrar.escrowedController(parentId), controller);
+        assertEq(nameNFT.ownerOf(parentId), address(registrar));
+
+        // Old controller tries to withdraw — blocked by epoch mismatch
+        vm.prank(controller);
+        vm.expectRevert(SubdomainRegistrar.StaleEscrow.selector);
+        registrar.withdrawParent(parentId, controller);
+
+        // New owner's NFT is safe in the registrar
+        assertEq(nameNFT.ownerOf(parentId), address(registrar));
+    }
+
+    /// @notice Legitimate deposit-withdraw cycle still works with epoch check.
+    function testEpochCheckAllowsLegitimateWithdraw() public {
+        _depositParent();
+
+        // Withdraw works immediately — epoch matches
+        vm.prank(controller);
+        registrar.withdrawParent(parentId, controller);
+        assertEq(nameNFT.ownerOf(parentId), controller);
     }
 
     /// @notice NameNFT rejects invalid labels — registrar surfaces the revert.
