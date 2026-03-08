@@ -1,4 +1,4 @@
-# Wei Names AI Audit by Surya
+# Wei Names AI Audit by Plainshift AI
 
 
 **Date**: 2026-03-05

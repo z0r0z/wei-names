@@ -641,11 +641,11 @@ AI-assisted audits performed on the codebase:
 
 | Audit | Scope | Findings | Status |
 |---|---|---|---|
-| [Surya](audit/surya.md) | NameNFT, SubdomainRegistrar | 1 High, 1 Medium | All fixed |
+| [Plainshift AI](audit/plainshift.md) | NameNFT, SubdomainRegistrar | 1 High, 1 Medium | All fixed |
 | [Cantina Apex](audit/cantina.md) | NameNFT, Dapp | 3 Medium | All patched |
 | [Zellic V12](audit/zellic/weinames_findings_2026-03-08-findings.md) | NameNFT, SubdomainRegistrar | 1 Medium, 1 Low | Both invalid |
 
-**Surya** found two valid SubdomainRegistrar issues: subdomain hijacking via missing `isAvailable` check (High), and stale escrow controller enabling NFT theft via epoch mismatch (Medium). Both were fixed in the redeployed SubdomainRegistrar.
+**Plainshift AI** found two valid SubdomainRegistrar issues: subdomain hijacking via missing `isAvailable` check (High), and stale escrow controller enabling NFT theft via epoch mismatch (Medium). Both were fixed in the redeployed SubdomainRegistrar.
 
 **Cantina Apex** found three valid dapp/integration issues: XSS via unescaped name in `innerHTML`, router commit-reveal frontrunning, and refund misdirection through router. All were patched in the dapp and zRouter. NameNFT contract was not affected. (SubdomainRegistrar not included.)
 
