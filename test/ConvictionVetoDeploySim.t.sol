@@ -8,6 +8,15 @@ interface ICreateX {
     function deployCreate3(bytes32 salt, bytes calldata initCode) external payable returns (address);
 }
 
+interface IDao {
+    function vetoer() external view returns (address);
+    function threshold() external view returns (uint256);
+    function proposals(uint256)
+        external
+        view
+        returns (uint64, uint64, bool, bool, address, uint256, uint256, uint256, bytes memory);
+}
+
 /// @notice Mainnet-fork rehearsal of the exact ConvictionVeto deploy: as the deployer EOA, call
 ///         `CreateX.deployCreate3(salt, initCode)` and assert it lands on the mined vanity address and
 ///         wires to the live DAO/NFT. Self-skips unless `RUN_FORK_SIM=true`.
@@ -47,5 +56,36 @@ contract ConvictionVetoDeploySim is Test {
             0xa3cbec6f0a52ab020919800d82007684e63632feadb0f555ac3cf796ec121dc1
         );
         emit log_named_address("ConvictionVeto deployed at", cv);
+    }
+
+    /// @notice Proves the live veto path end-to-end: with veto-conviction over the bar, the exact call
+    ///         the dapp's Veto button sends (`ConvictionVeto.veto(id)`, permissionless) cancels the real
+    ///         proposal on the deployed DAO — confirming the now-live role assignment actually works.
+    function testDappVetoPathLive() public {
+        if (!vm.envOr("RUN_FORK_SIM", false)) {
+            vm.skip(true);
+            return;
+        }
+        vm.createSelectFork("https://ethereum-rpc.publicnode.com");
+        ConvictionVeto cv = ConvictionVeto(PREDICTED);
+        IDao dao = IDao(DAO);
+        assertEq(dao.vetoer(), PREDICTED, "ConvictionVeto must be the live vetoer");
+
+        uint256 id = 1; // the live "withdraw fees" proposal
+        (,,, bool vetoedBefore,,,,,) = dao.proposals(id);
+        assertFalse(vetoedBefore, "proposal 1 not vetoed on mainnet");
+
+        // Stage crossed veto-conviction: props[id] = (lastUpdate=now, conviction=2*threshold, weight=0)
+        // — props is storage slot 0; fields sit at base+0/+1/+2 (see storage-layout).
+        bytes32 base = keccak256(abi.encode(id, uint256(0)));
+        vm.store(PREDICTED, base, bytes32(block.timestamp)); // lastUpdate
+        vm.store(PREDICTED, bytes32(uint256(base) + 1), bytes32(dao.threshold() * 2)); // conviction
+        assertTrue(cv.vetoable(id), "veto-conviction should be over the bar");
+
+        cv.veto(id); // permissionless — exactly what the dapp button sends
+
+        (,,, bool vetoedAfter,,,,,) = dao.proposals(id);
+        assertTrue(vetoedAfter, "proposal must be cancelled on the DAO");
+        emit log("cv.veto(1) cancelled the live proposal on a fork");
     }
 }
