@@ -8,3 +8,5 @@ ops/__pycache__/
 ops/*.out
 ops/deploy_*.hex
 ops/demo_*.html
+ops/cv_initcode.hex
+ops/cv_deploycreate3_calldata.hex
