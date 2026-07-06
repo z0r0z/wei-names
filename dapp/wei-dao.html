@@ -1,0 +1,393 @@
+<!doctype html>
+<meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>WeiDAO</title>
+<link rel=icon type=image/svg+xml href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20fill%3D%22%230A0A0A%22%2F%3E%3Cpath%20d%3D%22M16%2C16%20V48%20H22%20L32%2C32%20L42%2C48%20H48%20V16%20H42%20V38%20L32%2C22%20L22%2C38%20V16%20Z%22%20fill%3D%22%232D5FE8%22%2F%3E%3C%2Fsvg%3E">
+<style>
+:root{--bg:#fbfbfd;--surface:#f4f4f7;--fg:#18181d;--muted:#6b6c78;--line:#e7e7ee;--accent:#4f46e5;--weak:#edecfc;--good:#15803d;--warn:#b45309;--bad:#be123c;--r:10px}
+@media(prefers-color-scheme:dark){:root{--bg:#0b0c10;--surface:#15171d;--fg:#e9e9ef;--muted:#8a8b98;--line:#23252d;--accent:#818cf8;--weak:#1a1b2b;--good:#4ade80;--warn:#fbbf24;--bad:#fb7185}}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;max-width:66rem;margin:0 auto;padding:1.6rem 1.2rem 4rem;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:.7rem}
+.mark{width:2.2rem;height:2.2rem;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;flex:none}
+.mark svg{width:1.45rem;height:1.45rem;display:block}
+h1{font-size:1.35rem;font-weight:700;letter-spacing:-.01em;margin:0;line-height:1.15}
+.tag{font-size:.8rem;color:var(--muted);margin-top:.15rem}
+button{font:inherit;font-size:.85rem;font-weight:500;padding:.4rem .8rem;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;cursor:pointer;transition:border-color .15s}
+button:hover{border-color:var(--accent)}button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.cta{background:var(--accent);color:#fff;border-color:var(--accent)}.cta:hover{filter:brightness(1.08);border-color:var(--accent)}
+button.op{color:var(--bad)}button.op:hover{border-color:var(--bad)}
+button.vcta{background:var(--bad);color:#fff;border-color:var(--bad)}button.vcta:hover{filter:brightness(1.08)}
+.wc{position:relative}
+#wpick{position:absolute;right:0;top:100%;margin-top:.35rem;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.3rem;display:none;z-index:20;min-width:11rem;box-shadow:0 8px 30px rgba(0,0,0,.22)}
+#wpick.show{display:block}
+#wpick .t{font-size:.6rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:.3rem .5rem}
+#wpick button{display:block;width:100%;text-align:left;border:none;background:none;margin:0;padding:.45rem .5rem;border-radius:6px}
+#wpick button:hover{background:var(--bg);border:none}
+details.info{margin:1rem 0;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:0 .9rem}
+details.info>summary{cursor:pointer;padding:.7rem 0;font-size:.82rem;font-weight:600;list-style:none}
+details.info>summary::-webkit-details-marker{display:none}
+details.info p{font-size:.85rem;color:var(--muted);margin:0 0 .9rem;max-width:46rem;line-height:1.65}details.info b{color:var(--fg)}
+.strip{display:flex;flex-wrap:wrap;gap:1rem 2rem;padding:1rem 0;margin:1rem 0 .3rem;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.stat{display:flex;flex-direction:column;gap:.15rem}
+.stat .l{font-size:.62rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+.stat .v{font-size:1.05rem;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}.stat .v small{font-size:.7rem;font-weight:400;color:var(--muted)}
+.meta{display:flex;flex-wrap:wrap;gap:.3rem 1.2rem;align-items:center;color:var(--muted);font-size:.82rem;margin:.3rem 0 0}.meta b{color:var(--fg);font-weight:600}
+#me{font-size:.85rem;color:var(--muted);margin:.6rem 0}#me b{color:var(--fg)}
+h2{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin:1.8rem 0 .7rem}
+form{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:1rem;display:flex;flex-wrap:wrap;gap:.8rem;align-items:start}
+form label{display:flex;flex-direction:column;gap:.35rem;font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;line-height:1.2}
+#wd-new>button{align-self:flex-end}
+input,select,textarea{font:inherit;font-size:.85rem;font-weight:400;text-transform:none;letter-spacing:0;padding:.45rem .6rem;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);max-width:100%}
+input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{resize:vertical;font:12px ui-monospace,monospace;min-height:2.4rem}
+.wrap{overflow-x:auto;overflow-y:hidden}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:44rem}
+thead th{color:var(--muted);font-weight:600;font-size:.6rem;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:.5rem .6rem;border-bottom:1px solid var(--line);white-space:nowrap}
+tbody td{padding:.85rem .6rem;border-bottom:1px solid var(--line);vertical-align:top}tbody tr:hover td{background:var(--surface)}
+.pill{display:inline-flex;align-items:center;padding:.15rem .55rem;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap;border:1px solid;line-height:1.5}
+.pill.build{color:var(--muted);border-color:var(--line)}.pill.exec{color:var(--accent);border-color:var(--accent);background:var(--weak)}
+.pill.done{color:var(--good);border-color:var(--good)}.pill.veto{color:var(--bad);border-color:var(--bad)}.pill.lock{color:var(--warn);border-color:var(--warn)}
+.conv{display:flex;align-items:center;gap:.5rem;min-width:8rem;margin:.15rem 0}
+.conv .cl{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);min-width:3.1rem}
+.bar{flex:1;background:var(--line);height:6px;border-radius:99px;overflow:hidden;min-width:44px}.bar>i{display:block;height:100%;background:var(--accent);border-radius:99px}.bar>i.v{background:var(--bad)}
+.conv small{color:var(--muted);font-variant-numeric:tabular-nums;font-size:11px;min-width:2.4rem;text-align:right}
+.num{white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--muted)}
+a.addr{font:12px ui-monospace,monospace;color:var(--accent);white-space:nowrap;background:var(--surface);padding:.15rem .4rem;border-radius:6px}
+.desc{color:var(--fg);max-width:24rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cd{margin-top:.4rem}.cd summary{cursor:pointer;font-size:11px;color:var(--muted)}.cd code{display:inline-block;margin-top:.3rem;max-width:20rem;word-break:break-all;font-size:11px;color:var(--muted)}
+.act{display:flex;gap:.35rem;flex-wrap:wrap}
+.pager{display:flex;gap:1.2rem;align-items:center;color:var(--muted);font-size:.8rem;margin:1.1rem 0;flex-wrap:wrap}
+footer{margin-top:2.5rem;padding-top:1.2rem;border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:flex;flex-wrap:wrap;gap:.4rem .8rem;align-items:center}
+footer a{color:var(--muted)}footer a:hover{color:var(--accent)}footer .sep{opacity:.5}
+footer input{font-size:11px;padding:.2rem .4rem;width:14rem;max-width:60vw}
+.status{margin:.6rem 0;font-size:.82rem;color:var(--muted);min-height:1.1rem}
+@media(max-width:680px){body{padding:1.2rem 1rem 3rem}.wrap{overflow:visible}thead{display:none}table,tbody,tr,td{display:block;width:100%;min-width:0}tbody tr{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:.7rem .9rem;margin:.8rem 0}tbody tr:hover td{background:none}tbody td{border:none;padding:.3rem 0;display:flex;gap:1rem;justify-content:space-between;align-items:center}td::before{content:attr(data-l);color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.05em;flex:0 0 auto}td.conv-cell,td.desc-cell,td.act-cell{display:block}td.conv-cell::before,td.desc-cell::before,td.act-cell::before{content:none}.desc{max-width:none}.act{margin-top:.5rem}.act button{flex:1}}
+</style>
+
+<header>
+  <div class=brand>
+    <div class=mark><svg viewBox="0 0 64 64" aria-hidden=true><path d="M16,16 V48 H22 L32,32 L42,48 H48 V16 H42 V38 L32,22 L22,38 V16 Z" fill="currentColor"/></svg></div>
+    <div><h1>WeiDAO</h1><div class=tag>conviction-voting treasury for the Wei Name Service</div></div>
+  </div>
+  <div class=wc><button id=cx class=cta onclick="wd.connect()">Connect wallet</button><div id=wpick></div></div>
+</header>
+
+<details class=info>
+  <summary>How it works</summary>
+  <p>Back a proposal with a <b>.wei</b> name you own — its weight is the ETH you've committed to that name (length-fee tier × time paid ahead), so voting power tracks real contribution, not headcount. <b>Conviction</b> builds while weight is held and decays when withdrawn; a proposal passes once it crosses the <b>threshold</b> (about the <b>Pass bar</b> of weight sustained for one <b>half-life</b>), then executes after a short <b>timelock</b>. No deadlines and no "against".</p>
+  <p><b>Oppose</b> routes through the community <a href="https://etherscan.io/address/0x0000005260725eEE99704957218d4045a50C2051" target=_blank rel=noopener>ConvictionVeto</a> contract: it builds <b>veto-conviction</b> with the exact same weight and math. Once it reaches the same bar, anyone can <b>cancel</b> the proposal — a symmetric "no". The veto row appears only once someone has opposed.</p>
+</details>
+
+<div id=me>Connect your wallet to vote with your WNS name and see your voting weight.</div>
+<div class=strip id=stats></div>
+<div class=meta id=roles></div>
+<div class=status id=status></div>
+
+<h2>Proposals</h2>
+<div class=wrap><table>
+  <thead><tr><th>#</th><th>status</th><th>conviction</th><th>value</th><th>target</th><th>description</th><th></th></tr></thead>
+  <tbody id=rows><tr><td colspan=7 style="color:var(--muted)">Loading…</td></tr></tbody>
+</table></div>
+<div class=pager id=pager></div>
+
+<h2>New proposal</h2>
+<form id=wd-new>
+  <label>target (0x or .wei)<input name=t placeholder=0x0000 size=16 required></label>
+  <label>value (ETH)<input name=v type=number step=any min=0 placeholder=0 style=width:7rem></label>
+  <label>calldata (hex)<textarea name=d placeholder=0x rows=2 cols=16></textarea></label>
+  <label>description<textarea name=desc rows=2 cols=24 maxlength=2048 required></textarea></label>
+  <button class=cta>propose · pays fee</button>
+</form>
+
+<footer>
+  <span><b>DAO</b> <a id=daolink target=_blank rel=noopener>0x0000…4936</a></span><span class=sep>·</span>
+  <a id=nftlink target=_blank rel=noopener>WNS NameNFT</a><span class=sep>·</span>
+  <a href="https://etherscan.io/address/0x0000005260725eEE99704957218d4045a50C2051" target=_blank rel=noopener>ConvictionVeto</a><span class=sep>·</span>
+  <a href="https://wei.domains" target=_blank rel=noopener>wei.domains</a><span class=sep>·</span>
+  <a href="https://wns.wei.limo" target=_blank rel=noopener>wns.wei.limo</a><span class=sep>·</span>
+  <a href="https://opensea.io/collection/wei-name-service" target=_blank rel=noopener>OpenSea</a><span class=sep>·</span>
+  <a href="https://github.com/solardev-xyz/freedom-browser" target=_blank rel=noopener>Freedom Browser</a><span class=sep>·</span>
+  <label style="display:flex;gap:.35rem;align-items:center">RPC <input id=rpc placeholder=https://…></label>
+</footer>
+
+<script>
+(function(){
+"use strict";
+// ── Live mainnet contracts ──────────────────────────────────────────────────
+var DAO='0x00000007988A79d16cf76B5dc4cF54dc3Af24936';
+var NFT='0x0000000000696760E15f265e828DB644A0c242EB';
+var CV ='0x0000005260725eEE99704957218d4045a50C2051';
+// Selectors (cast sig). support/unsupport/veto/convictionOf share signatures across DAO & CV.
+var S={pcount:'0xda35c664',thresh:'0x42cde4e8',alpha:'0xdb1d0fd5',fee:'0xc27cabb5',delay:'0x8b257989',
+  prop:'0x013cf08b',conv:'0xcea5b888',cvprops:'0xfda54c16',weight:'0x0767d178',owner:'0x8da5cb5b',vetoer:'0xd8bff440',exec:'0xc34c08e5',
+  propose:'0x82ff16c1',support:'0x9be56c67',unsupport:'0x84a1faba',execute:'0xfe0d94c1',veto:'0x1d28dec7',multicall:'0xac9650d8',
+  computeId:'0xfb021939',primary:'0xeba951aa',fullName:'0x465411c1',rev:'0x9af8b7aa',resolve:'0x4f896d4f',text:'0x308e3386'};
+
+var W={};
+var RPC=localStorage.getItem('wd_rpc')||'https://ethereum-rpc.publicnode.com';
+document.getElementById('rpc').value=RPC;
+document.getElementById('rpc').onchange=function(e){RPC=e.target.value.trim();localStorage.setItem('wd_rpc',RPC);load();};
+document.getElementById('daolink').href='https://etherscan.io/address/'+DAO;
+var nl=document.getElementById('nftlink');nl.href='https://etherscan.io/address/'+NFT;
+
+// ── ABI helpers (same encoding as the on-chain bridge; all tested) ───────────
+function p(n){n=BigInt(n).toString(16);return '0'.repeat(64-n.length)+n;}
+function u8(s){return Array.from(new TextEncoder().encode(s)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');}
+function w(h){return h+'0'.repeat((64-h.length%64)%64);}
+function estr(s){var h=u8(s);return p(32)+p(h.length/2)+w(h);}
+function encStr(s){var h=u8(s);return p(h.length/2)+w(h);}
+function wei(s){s=(s||'0').trim();var a=s.split('.'),f=(a[1]||'').slice(0,18);return BigInt(a[0]||'0')*(10n**18n)+BigInt(f+'0'.repeat(18-f.length)||'0');}
+function eth(v){v=BigInt(v);return v/(10n**18n)+'.'+('0000'+((v%(10n**18n))/(10n**14n))).slice(-4);}
+function s2(h){h=h.slice(2);var n=parseInt(h.slice(64,128),16),b=new Uint8Array(n);for(var i=0;i<n;i++)b[i]=parseInt(h.substr(128+i*2,2),16);return new TextDecoder().decode(b);}
+function word(h,i){h=h.slice(2);return h.slice(i*64,(i+1)*64);}
+function big(x){return BigInt('0x'+(x||'0'));}
+function addrOf(h){return '0x'+word(h,0).slice(24);}
+function esc(s){return (s||'').replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function dur(s){s=Number(s);if(!s)return 'none';if(s>=86400)return Math.floor(s/86400)+'d';if(s>=3600)return Math.floor(s/3600)+'h';if(s>=60)return Math.floor(s/60)+'m';return s+'s';}
+function pct(num,den){if(den<=0n)return 0;var v=Number(num*100n/den);return v>100?100:v;}
+function short(a){return a.slice(0,6)+'…'+a.slice(-4);}
+function elink(a,label){return '<a class=addr href="https://etherscan.io/address/'+a+'" target=_blank rel=noopener>'+(label||short(a))+'</a>';}
+// α^exp and conviction half-life, mirroring WeiDAO._pow / _halfLife.
+function powA(base,exp){var r=10n**18n;base=BigInt(base);exp=BigInt(exp);while(exp>0n){if(exp&1n)r=r*base/(10n**18n);base=base*base/(10n**18n);exp>>=1n;}return r;}
+function halfLife(al){var hi=BigInt(3650*86400),H=(10n**18n)/2n;if(powA(al,hi)>H)return 0;var lo=1n;while(lo<hi){var mid=(lo+hi)/2n;if(powA(al,mid)<=H)hi=mid;else lo=mid+1n;}return Number(lo);}
+
+// ── Transport: reads try the public RPC, then fall back to the wallet provider ─
+async function rpcFetch(payload){
+  var r=await fetch(RPC,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(Object.assign({jsonrpc:'2.0',id:1},payload))});
+  var j=await r.json();if(j.error)throw new Error(j.error.message||'rpc error');return j.result;
+}
+async function rawRead(payload){
+  var e1;
+  if(RPC){try{return await rpcFetch(payload);}catch(e){e1=e;}}
+  if(W.prov){try{return await W.prov.request(payload);}catch(e){e1=e1||e;}}   // graceful fallback
+  throw e1||new Error('No RPC and no wallet connected');
+}
+function read(to,data){return rawRead({method:'eth_call',params:[{to:to,data:data},'latest']});}
+function balOf(a){return rawRead({method:'eth_getBalance',params:[a,'latest']});}
+function say(m){document.getElementById('status').textContent=m||'';}
+
+// ── Wallet: EIP-6963 discovery, minimal picker, persists across refresh ──────
+var provs={}; // rdns -> {info, provider}
+var wired=new WeakSet(); // providers whose event listeners are already attached
+window.addEventListener('eip6963:announceProvider',function(ev){
+  var d=ev.detail;if(!d||!d.info||!d.provider)return;provs[d.info.rdns]=d;
+  var saved=localStorage.getItem('wd_wallet');
+  if(saved&&saved===d.info.rdns&&!W.prov)silentRestore(d);   // reconnect after refresh
+});
+window.dispatchEvent(new Event('eip6963:requestProvider'));
+
+function walletList(){
+  // EIP-6963 is the modern multi-wallet standard; only fall back to the legacy single injected
+  // provider when nothing announced, so a wallet never shows up twice.
+  var out=Object.values(provs).map(function(d){return {rdns:d.info.rdns,name:d.info.name,provider:d.provider};});
+  if(!out.length&&window.ethereum)out.push({rdns:'injected',name:'Browser wallet',provider:window.ethereum});
+  return out;
+}
+async function adopt(d,account){
+  W.prov=d.provider;W.acct=account;localStorage.setItem('wd_wallet',d.rdns);
+  if(d.provider.on&&!wired.has(d.provider)){wired.add(d.provider);
+    d.provider.on('accountsChanged',function(a){if(!a||!a.length){disconnect();}else{W.acct=a[0];W.pid=undefined;W.name=undefined;showId();}});
+    d.provider.on('chainChanged',function(){location.reload();});}
+  showId();
+}
+function disconnect(){W.prov=null;W.acct=null;W.pid=undefined;W.name=undefined;localStorage.removeItem('wd_wallet');
+  document.getElementById('cx').textContent='Connect wallet';
+  document.getElementById('me').innerHTML='Connect your wallet to vote with your WNS name and see your voting weight.';}
+async function silentRestore(d){try{var a=await d.provider.request({method:'eth_accounts'});if(a&&a.length)adopt({rdns:d.info?d.info.rdns:d.rdns,provider:d.provider},a[0]);}catch(e){}}
+function pickHide(){document.getElementById('wpick').classList.remove('show');}
+function pickShow(list){
+  var m=document.getElementById('wpick');
+  m.innerHTML='<div class=t>Choose a wallet</div>'+list.map(function(o,i){return '<button data-i='+i+'>'+esc(o.name)+'</button>';}).join('');
+  m.querySelectorAll('button').forEach(function(b){b.onclick=function(){pickHide();chooseConnect(list[+b.dataset.i]);};});
+  m.classList.add('show');
+  setTimeout(function(){document.addEventListener('click',function h(e){if(!m.parentNode.contains(e.target)){pickHide();document.removeEventListener('click',h);}});},0);
+}
+async function chooseConnect(o){
+  try{var a=await o.provider.request({method:'eth_requestAccounts'});if(a&&a.length)adopt(o,a[0]);}
+  catch(e){say(e&&e.code===4001?'Connection cancelled.':'Wallet error: '+(e&&e.message||e));}
+}
+
+async function ensureWallet(){ // returns provider account for a write, prompting/picking if needed
+  if(W.prov&&W.acct)return W.acct;
+  var list=walletList();
+  if(!list.length){alert('No Ethereum wallet found — install one to vote.');return null;}
+  if(list.length===1){await chooseConnect(list[0]);return W.acct;}
+  pickShow(list);return null; // user picks, then re-clicks the action
+}
+async function onMainnet(){try{if(await W.prov.request({method:'eth_chainId'})==='0x1')return true;
+  await W.prov.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x1'}]});
+  return await W.prov.request({method:'eth_chainId'})==='0x1';}catch(e){alert('Switch your wallet to Ethereum mainnet first.');return false;}}
+async function send(to,data,value){
+  var a=await ensureWallet();if(!a)return;if(!await onMainnet())return;
+  try{var h=await W.prov.request({method:'eth_sendTransaction',params:[{from:a,to:to,data:data,value:value||'0x0'}]});
+    say('Submitted '+h.slice(0,10)+'… — refreshing shortly.');setTimeout(load,4000);return h;}
+  catch(e){say(e&&e.code===4001?'Cancelled.':'Tx error: '+(e&&e.message||e));}
+}
+async function showId(){
+  var a=W.acct;if(!a)return;var nm=await revName(a);
+  document.getElementById('cx').textContent=nm||short(a);
+  var pid=await primaryOf(),me=document.getElementById('me');
+  if(pid){var wt=eth(await read(DAO,S.weight+p(pid)));
+    me.innerHTML='Voting as <b>'+esc(nm||s2(await read(NFT,S.fullName+p(pid))))+'</b> · weight '+wt+' ETH';}
+  else me.innerHTML='No WNS primary name set — <a href=https://wei.domains target=_blank rel=noopener>get one</a> to vote in one click.';
+}
+
+// ── Name resolution ──────────────────────────────────────────────────────────
+async function nameId(nm){nm=nm.trim();if(nm.indexOf('.')<0)nm+='.wei';return big((await read(NFT,S.computeId+estr(nm))).slice(2));}
+async function toAddr(x){x=x.trim();if(/^0x[0-9a-fA-F]{40}$/.test(x))return x;var a='0x'+(await read(NFT,S.resolve+p(await nameId(x)))).slice(-40);if(/^0x0+$/.test(a)){alert(x+' does not resolve to an address');throw 0;}return a;}
+async function revName(a){try{return s2(await read(NFT,S.rev+p(BigInt(a))));}catch(e){return '';}}
+async function primaryOf(){if(!W.acct)return 0n;if(W.pid!==undefined)return W.pid;W.pid=big((await read(NFT,S.primary+p(BigInt(W.acct)))).slice(2));return W.pid;}
+
+// ── Load state ───────────────────────────────────────────────────────────────
+async function load(){
+  try{
+    // Global state in one parallel batch (keeps the page snappy over a single RPC).
+    var g=await Promise.all([read(DAO,S.pcount),read(DAO,S.thresh),read(DAO,S.alpha),read(DAO,S.fee),read(DAO,S.delay),
+      balOf(DAO),read(NFT,S.owner),read(DAO,S.vetoer),read(DAO,S.exec)]);
+    var count=Number(big(g[0].slice(2))),th=big(g[1].slice(2)),al=big(g[2].slice(2)),fee=big(g[3].slice(2)),delay=Number(big(g[4].slice(2)));
+    var daoBal=big(g[5].slice(2)),nftOwner=addrOf(g[6]),vet=addrOf(g[7]),exe=addrOf(g[8]);
+    W.th=th;W.fee=fee;
+    // ETH under governance = DAO treasury + WNS registration fees it can withdraw (only while the DAO owns NameNFT).
+    var wnsBal=nftOwner.toLowerCase()===DAO.toLowerCase()?big((await balOf(NFT)).slice(2)):0n;
+    var gov=daoBal+wnsBal;
+    var govTip=wnsBal>0n?('treasury '+eth(daoBal)+' + WNS fees '+eth(wnsBal)):'DAO treasury';
+    var passW=2n*th*(10n**18n-al)/(10n**18n),hl=halfLife(al);
+    stats([['Under governance',eth(gov),'ETH',govTip],['Proposals',String(count),'',''],
+      ['Pass bar','~'+eth(passW),'ETH·held','sustained backing to pass in one half-life'],
+      ['Half-life',hl?dur(hl):'>10y','','the alpha decay'],['Timelock',dur(delay),'','min delay before a passed proposal executes']]);
+    document.getElementById('roles').innerHTML='<span><b>vetoer</b> '+roleTag(vet)+'</span><span><b>exec</b> '+roleTag(exe)
+      +'</span><span title="conviction required to pass"><b>threshold</b> '+eth(th)+'</span>';
+    W.count=count;W.delay=delay;
+    say('');
+    await renderRows(0); // newest page
+  }catch(e){say('Read error: '+(e&&e.message||e)+' — try a different RPC in the footer.');}
+}
+function roleTag(a){return /^0x0+$/.test(a)?'<span>none</span>':elink(a);}
+
+// Render one page of proposals (newest-first, 25 per page) from cached global state.
+async function renderRows(fromId){
+  var count=W.count,th=W.th,delay=W.delay,rowsEl=document.getElementById('rows');
+  if(!count){rowsEl.innerHTML='<tr><td colspan=7 style="color:var(--muted)">No proposals yet — be the first.</td></tr>';pager(0,0,0);return;}
+  var top=(!fromId||fromId>count)?count:fromId,stop=top>25?top-25:0,now=Math.floor(Date.now()/1000),ids=[];
+  for(var i=top;i>stop;i--)ids.push(i);
+  rowsEl.innerHTML='<tr><td colspan=7 style="color:var(--muted)">Loading…</td></tr>';
+  var rows=await Promise.all(ids.map(function(id){return loadRow(id,th,delay,now);}));
+  rowsEl.innerHTML=rows.join('');
+  pager(top,stop,count);
+}
+function pager(top,stop,count){
+  var el=document.getElementById('pager');
+  if(count<=25){el.innerHTML='';return;}
+  var h='<span>Showing '+(stop+1)+'–'+top+' of '+count+'</span>';
+  if(top<count)h+='<button onclick="wd.page('+Math.min(count,top+25)+')">← Newer</button>';
+  if(stop>0)h+='<button onclick="wd.page('+stop+')">Older →</button>';
+  el.innerHTML=h;
+}
+
+async function loadRow(id,th,delay,now){
+ try{
+  // All per-proposal reads in parallel: proposal, support-conviction, veto-conviction, veto backing, description.
+  var res=await Promise.all([read(DAO,S.prop+p(id)),read(DAO,S.conv+p(id)),read(CV,S.conv+p(id)),read(CV,S.cvprops+p(id)),descOf(id)]);
+  var r=res[0],conv=big(res[1].slice(2)),vconv=big(res[2].slice(2)),vp=res[3],desc=res[4];
+  var vsupW=big(word(vp,2)); // ConvictionVeto props = (lastUpdate, conviction, supportWeight)
+  var hasVeto=vsupW>0n||vconv>0n; // opposition exists the moment weight backs it, even before conviction accrues
+  var created=Number(big(word(r,1))),executed=big(word(r,2))!==0n,vetoed=big(word(r,3))!==0n;
+  var target='0x'+word(r,4).slice(24),value=big(word(r,7));
+  var off=Number(big(word(r,8)))/32,dlen=parseInt(r.slice(2).slice(off*64,(off+1)*64),16);
+  var data=dlen?'0x'+r.slice(2).slice((off+1)*64,(off+1)*64+dlen*2):'0x';
+
+  var pill,ready=false,vready=vconv>=th&&!executed&&!vetoed;
+  if(executed)pill='<span class="pill done">executed</span>';
+  else if(vetoed)pill='<span class="pill veto">vetoed</span>';
+  else{
+    if(conv>=th){if(now>=created+delay){pill='<span class="pill exec">ready</span>';ready=true;}
+      else pill='<span class="pill lock">timelock '+dur(created+delay-now)+'</span>';}
+    else pill='<span class="pill build">building</span>';
+    if(vready)pill+=' <span class="pill veto">veto ready</span>'; // opposition crossed the bar — cancel available
+  }
+
+  var bars='<div class=conv><span class=cl>support</span><span class=bar><i style="width:'+pct(conv,th)+'%"></i></span><small>'+pct(conv,th)+'%</small></div>';
+  if(hasVeto)bars+='<div class=conv title="veto backing '+eth(vsupW)+' ETH held"><span class=cl>oppose</span><span class=bar><i class=v style="width:'+pct(vconv,th)+'%"></i></span><small>'+pct(vconv,th)+'%</small></div>';
+
+  var a='';
+  if(!executed&&!vetoed){
+    a+='<button onclick="wd.sup('+id+')">Support</button><button onclick="wd.unsup('+id+')">Withdraw</button>';
+    a+='<button class=op onclick="wd.oppose('+id+')">Oppose</button>';
+    if(hasVeto)a+='<button class=op onclick="wd.unoppose('+id+')">Un-oppose</button>';
+    if(ready)a+='<button class=cta onclick="wd.execute('+id+')">Execute</button>';
+    if(vready)a+='<button class=vcta onclick="wd.veto('+id+')">Veto</button>';
+  }
+  var cd=data!=='0x'?'<details class=cd><summary>calldata</summary><code>'+esc(data.slice(0,514))+'</code></details>':'';
+  return '<tr>'
+    +'<td class=num data-l=# >'+id+'</td><td data-l=status>'+pill+'</td>'
+    +'<td class=conv-cell data-l=conviction>'+bars+'</td>'
+    +'<td class=num data-l=value>'+(value>0n?eth(value)+' ETH':'—')+'</td>'
+    +'<td data-l=target>'+elink(target)+'</td>'
+    +'<td class=desc-cell data-l=description><div class=desc>'+(esc(desc)||'<span style="color:var(--muted)">—</span>')+'</div>'+cd+'</td>'
+    +'<td class=act-cell><div class=act>'+a+'</div></td></tr>';
+ }catch(e){ // one bad proposal shouldn't blank the whole list
+  return '<tr><td class=num data-l=# >'+id+'</td><td colspan=6 style="color:var(--muted)">couldn\'t load this proposal</td></tr>';
+ }
+}
+async function descOf(id){
+  try{var tid=big((await read(NFT,S.computeId+estr(id+'.dao.wei'))).slice(2));
+    return s2(await read(NFT,S.text+p(tid)+p(64)+encStr('description')));}catch(e){return '';}
+}
+function stats(items){
+  document.getElementById('stats').innerHTML=items.map(function(x){
+    return '<div class=stat'+(x[3]?' title="'+esc(x[3])+'"':'')+'><span class=l>'+x[0]+'</span><span class=v>'+x[1]+(x[2]?' <small>'+x[2]+'</small>':'')+'</span></div>';
+  }).join('');
+}
+
+// ── Voting: prompt for name(s), resolve to tokenIds, stack via multicall ─────
+function mc(cds){var n=cds.length,off=n*32,h='',t='';for(var c of cds){c=c.replace(/^0x/,'');h+=p(off);var e=p(c.length/2)+w(c);t+=e;off+=e.length/2;}return S.multicall+p(32)+p(n)+h+t;}
+async function vote(to,id,sel,verb){
+  var a=await ensureWallet();if(!a)return;var def=await revName(a);
+  var s=prompt('WNS name(s) to '+verb+' proposal #'+id+' — e.g. ross.wei; comma-separate to stack several:',def||'');
+  if(s===null)return;var ids=[];
+  if(s.trim()){for(var nm of s.split(','))if(nm.trim())ids.push(await nameId(nm));}
+  else{var pid=await primaryOf();if(!pid){alert('No WNS name set — type a name or register at wei.domains.');return;}ids=[pid];}
+  if(!ids.length)return;var cds=ids.map(function(t){return sel+p(id)+p(t);});
+  return send(to,cds.length>1?mc(cds):('0x'+cds[0].replace(/^0x/,'')));
+}
+
+var wd={
+  connect:async function(){
+    var list=walletList();
+    if(!list.length){alert('No Ethereum wallet found — install one (MetaMask, Rabby, …) to vote.');return;}
+    if(W.prov){pickShow(list.concat([{rdns:'dc',name:'Disconnect',provider:null}]));return;}
+    if(list.length===1){chooseConnect(list[0]);return;}
+    pickShow(list);
+  },
+  sup:function(id){return vote(DAO,id,S.support,'back');},
+  unsup:function(id){return vote(DAO,id,S.unsupport,'withdraw support from');},
+  oppose:function(id){return vote(CV,id,S.support,'oppose (veto)');},
+  unoppose:function(id){return vote(CV,id,S.unsupport,'withdraw opposition from');},
+  page:function(f){renderRows(f);var h=document.querySelector('h2');if(h)h.scrollIntoView({behavior:'smooth',block:'start'});},
+  execute:function(id){return send(DAO,S.execute+p(id));},
+  veto:function(id){if(confirm('Cancel proposal #'+id+' via community veto? This is irreversible.'))return send(CV,S.veto+p(id));},
+  propose:async function(t,e,d,desc){d=(d||'').replace(/^0x/,'');
+    if(!/^([0-9a-fA-F]{2})*$/.test(d)){alert('Calldata must be hex with an even number of digits');return;}
+    if((e||'').trim()&&!/^[0-9]*[.]?[0-9]*$/.test(e.trim())){alert('Value must be a decimal amount of ETH');return;}
+    t=await toAddr(t);var val=wei(e);if(val>=(1n<<256n)){alert('Value exceeds uint256');return;}
+    var x=u8(desc),dl=d.length/2,sl=x.length/2,dp=Math.ceil(dl/32)*32;
+    if(sl>2048){alert('Description too long (max 2048 bytes)');return;}
+    return send(DAO,S.propose+p(BigInt(t))+p(val)+p(128)+p(160+dp)+p(dl)+w(d)+p(sl)+w(x),'0x'+BigInt(W.fee||0).toString(16));}
+};
+// The picker's "Disconnect" pseudo-entry is intercepted here.
+var _choose=chooseConnect;chooseConnect=function(o){if(o&&o.rdns==='dc'){disconnect();return;}return _choose(o);};
+window.wd=wd;
+var f=document.getElementById('wd-new');
+f.onsubmit=function(ev){ev.preventDefault();wd.propose(f.t.value,f.v.value,f.d.value,f.desc.value);};
+
+// Re-announce (some wallets inject late) then attempt silent reconnect for the last-used wallet.
+window.dispatchEvent(new Event('eip6963:requestProvider'));
+setTimeout(function(){var saved=localStorage.getItem('wd_wallet');if(saved&&!W.prov){
+  if(saved==='injected'&&window.ethereum)silentRestore({info:{rdns:'injected'},provider:window.ethereum});
+  else if(provs[saved])silentRestore(provs[saved]);}},400);
+load();
+})();
+</script>
